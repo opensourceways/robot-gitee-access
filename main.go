@@ -10,6 +10,7 @@ import (
 	"github.com/opensourceways/robot-gitee-plugin-lib/interrupts"
 	"github.com/opensourceways/robot-gitee-plugin-lib/logrusutil"
 	liboptions "github.com/opensourceways/robot-gitee-plugin-lib/options"
+	"github.com/opensourceways/robot-gitee-plugin-lib/secret"
 	"github.com/sirupsen/logrus"
 )
 
@@ -53,17 +54,27 @@ func main() {
 	agent := demuxConfigAgent{agent: &configAgent}
 	agent.Start()
 
+	secretAgent := new(secret.Agent)
+	if err := secretAgent.Start([]string{o.hmacSecretFile}); err != nil {
+		logrus.WithError(err).Fatal("Error starting secret agent.")
+	}
+
+	gethmac := secretAgent.GetTokenGenerator(o.hmacSecretFile)
+
 	d := dispatcher{
 		agent: &agent,
-		hmac:  "",
+		hmac: func() string {
+			return string(gethmac())
+		},
 	}
 
 	defer interrupts.WaitForGracefulShutdown()
 
 	interrupts.OnInterrupt(func() {
-		d.Wait()
 		agent.Stop()
 		configAgent.Stop()
+		secretAgent.Stop()
+		d.Wait()
 	})
 
 	// Return 200 on / for health checks.

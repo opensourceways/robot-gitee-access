@@ -163,10 +163,8 @@ github.com/onsi/ginkgo v1.14.0/go.mod h1:iSB4RoI2tjJc9BBv4NKIKWKya62Rps+oPG/Lv9k
 github.com/onsi/gomega v0.0.0-20170829124025-dcabb60a477c/go.mod h1:C1qb7wdrVGGVU+Z6iS04AVkA3Q65CEZX59MT0QO5uiA=
 github.com/onsi/gomega v1.7.1/go.mod h1:XdKZgCCFLUoM/7CFJVPcG8C1xQ1AJ0vpAezJrB7JYyY=
 github.com/onsi/gomega v1.10.1/go.mod h1:iN09h71vgCQne3DLsj+A5owkum+a2tYe+TOCB1ybHNo=
-github.com/opensourceways/robot-gitee-plugin-lib v0.0.0-20210910065412-7e547f597875 h1:L7n6bxdLHYxiRtfDuYWU2xhPMV8VYNKNom9XcAgiZwk=
-github.com/opensourceways/robot-gitee-plugin-lib v0.0.0-20210910065412-7e547f597875/go.mod h1:2ht3IyZ8HdkqEzsmIdMn27JrpzQxWy8ClS3ZFCkG+vU=
-github.com/opensourceways/robot-gitee-plugin-lib v0.0.0-20210910080649-b8257134127a h1:UP44yYoGQCgm4TwPoLud8Lj8HQCc2IYoWQoC5So1Ehk=
-github.com/opensourceways/robot-gitee-plugin-lib v0.0.0-20210910080649-b8257134127a/go.mod h1:2ht3IyZ8HdkqEzsmIdMn27JrpzQxWy8ClS3ZFCkG+vU=
+github.com/opensourceways/robot-gitee-plugin-lib v0.0.0-20210910093419-1a08672bb28e h1:mujMt2YSCok+t5l3SdkGZTNxqM7kji6dz23Cger0MoQ=
+github.com/opensourceways/robot-gitee-plugin-lib v0.0.0-20210910093419-1a08672bb28e/go.mod h1:2ht3IyZ8HdkqEzsmIdMn27JrpzQxWy8ClS3ZFCkG+vU=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=

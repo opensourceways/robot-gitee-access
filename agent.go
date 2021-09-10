@@ -76,12 +76,10 @@ func (ca *demuxConfigAgent) Start() {
 	ca.load()
 
 	ca.t.Start(
-		func() error {
+		func() {
 			ca.load()
-			return nil
 		},
 		1*time.Minute,
-		logrus.WithField("work", "gen demux config"),
 	)
 }
 

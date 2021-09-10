@@ -15,7 +15,7 @@ import (
 type dispatcher struct {
 	agent *demuxConfigAgent
 
-	hmac string
+	hmac func() string
 
 	// ec is an http client used for dispatching events
 	// to external plugin services.
@@ -30,7 +30,7 @@ func (d *dispatcher) Wait() {
 
 // ServeHTTP validates an incoming webhook and puts it into the event channel.
 func (d *dispatcher) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	eventType, eventGUID, payload, _, ok := giteeclient.ValidateWebhook(w, r, func() string { return d.hmac })
+	eventType, eventGUID, payload, _, ok := giteeclient.ValidateWebhook(w, r, d.hmac)
 	if !ok {
 		return
 	}
