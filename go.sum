@@ -163,8 +163,8 @@ github.com/onsi/ginkgo v1.14.0/go.mod h1:iSB4RoI2tjJc9BBv4NKIKWKya62Rps+oPG/Lv9k
 github.com/onsi/gomega v0.0.0-20170829124025-dcabb60a477c/go.mod h1:C1qb7wdrVGGVU+Z6iS04AVkA3Q65CEZX59MT0QO5uiA=
 github.com/onsi/gomega v1.7.1/go.mod h1:XdKZgCCFLUoM/7CFJVPcG8C1xQ1AJ0vpAezJrB7JYyY=
 github.com/onsi/gomega v1.10.1/go.mod h1:iN09h71vgCQne3DLsj+A5owkum+a2tYe+TOCB1ybHNo=
-github.com/opensourceways/community-robot-lib v0.0.0-20211025062546-1748f8a85767 h1:eMyzt+zdYMq3bv6QjKfiQTNVN4lYDe/gnvJhdIclbUg=
-github.com/opensourceways/community-robot-lib v0.0.0-20211025062546-1748f8a85767/go.mod h1:wVOxCg37uLrVNcOy/aTh/ip/sSVizPxjhONqqfGERK0=
+github.com/opensourceways/community-robot-lib v0.0.0-20211025094652-e48b92d2df4f h1:5Viwm7TONvkdSgK9BckaTk95FO/RHdBH8r/dw9UfwoI=
+github.com/opensourceways/community-robot-lib v0.0.0-20211025094652-e48b92d2df4f/go.mod h1:wVOxCg37uLrVNcOy/aTh/ip/sSVizPxjhONqqfGERK0=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=

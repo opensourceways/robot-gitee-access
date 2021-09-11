@@ -11,6 +11,7 @@ import (
 	"github.com/opensourceways/community-robot-lib/logrusutil"
 	liboptions "github.com/opensourceways/community-robot-lib/options"
 	"github.com/opensourceways/community-robot-lib/secret"
+	"github.com/opensourceways/community-robot-lib/utils"
 	"github.com/sirupsen/logrus"
 )
 
@@ -51,7 +52,7 @@ func main() {
 		logrus.WithError(err).Fatal("Error starting config agent.")
 	}
 
-	agent := demuxConfigAgent{agent: &configAgent}
+	agent := demuxConfigAgent{agent: &configAgent, t: utils.NewTimer()}
 	agent.Start()
 
 	secretAgent := new(secret.Agent)
@@ -72,8 +73,14 @@ func main() {
 
 	interrupts.OnInterrupt(func() {
 		agent.Stop()
+		logrus.Info("demux stopped")
+
 		configAgent.Stop()
+		logrus.Info("config agent stopped")
+
 		secretAgent.Stop()
+		logrus.Info("secret stopped")
+
 		d.Wait()
 	})
 

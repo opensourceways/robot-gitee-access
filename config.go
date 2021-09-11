@@ -32,7 +32,7 @@ func (a accessConfig) validate() error {
 		}
 	}
 
-	ps := make([]string, 0, len(a.Plugins))
+	ps := make([]string, len(a.Plugins))
 	for i := range a.Plugins {
 		ps[i] = a.Plugins[i].Name
 	}
