@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/opensourceways/robot-gitee-plugin-lib/config"
-	"github.com/opensourceways/robot-gitee-plugin-lib/utils"
+	"github.com/opensourceways/community-robot-lib/config"
+	"github.com/opensourceways/community-robot-lib/utils"
 	"github.com/sirupsen/logrus"
 )
 

@@ -4,13 +4,18 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-git_commit="$(git describe --tags --always --dirty)"
-build_date="$(date -u '+%Y%m%d')"
-docker_tag="v${build_date}-${git_commit}"
-docker_name="robot-gitee-access"
+work_dir=$(pwd)
+cd $(dirname $0)
+
+commit_id=$(git describe --tags --always --dirty)
+build_date=$(date -u '+%Y%m%d')
+image_tag="v${build_date}-${commit_id}"
+repository=$(pwd | xargs dirname | xargs basename)
 
 cat <<EOF
-STABLE_REPO ${REPO_OVERRIDE:-swr.ap-southeast-1.myhuaweicloud.com/opensourceway/}
-DOCKER_TAG ${TAG_OVERRIDE:-$docker_tag}
-DOCKER_NAME ${NAME_OVERRIDE:-$docker_name}
+IMAGE_REGISTRY ${IMAGE_REGISTRY_OVERRIDE:-swr.ap-southeast-1.myhuaweicloud.com}
+IMAGE_REPO ${IMAGE_REPO_OVERRIDE:-opensourceway/robot/$repository}
+IMAGE_TAG ${IMAGE_TAG_OVERRIDE:-$image_tag}
 EOF
+
+cd $work_dir

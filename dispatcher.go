@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/opensourceways/robot-gitee-plugin-lib/giteeclient"
+	"github.com/opensourceways/community-robot-lib/giteeclient"
 	"github.com/sirupsen/logrus"
 )
 
