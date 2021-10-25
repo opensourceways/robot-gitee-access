@@ -8,7 +8,7 @@ import (
 )
 
 type configuration struct {
-	Config botConfig `json:"botConfig,omitempty"`
+	Config accessConfig `json:"access,omitempty"`
 }
 
 func (c *configuration) Validate() error {
@@ -17,7 +17,7 @@ func (c *configuration) Validate() error {
 
 func (c *configuration) SetDefault() {}
 
-type botConfig struct {
+type accessConfig struct {
 	// Plugins is a map of repositories (eg "k/k") to lists of plugin names.
 	RepoPlugins map[string][]string `json:"repo_plugins,omitempty"`
 
@@ -25,7 +25,7 @@ type botConfig struct {
 	Plugins []pluginConfig `json:"plugins,omitempty"`
 }
 
-func (a botConfig) validate() error {
+func (a accessConfig) validate() error {
 	for i := range a.Plugins {
 		if err := a.Plugins[i].validate(); err != nil {
 			return err
@@ -53,7 +53,7 @@ func (a botConfig) validate() error {
 
 type eventsDemux map[string][]string
 
-func (a botConfig) getDemux() map[string]eventsDemux {
+func (a accessConfig) getDemux() map[string]eventsDemux {
 	plugins := make(map[string]int)
 	for i := range a.Plugins {
 		plugins[a.Plugins[i].Name] = i

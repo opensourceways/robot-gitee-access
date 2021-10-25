@@ -34,10 +34,10 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	return o
 }
 
-const botName = "robot-gitee-access"
+const component = "robot-gitee-access"
 
 func main() {
-	logrusutil.ComponentInit(botName)
+	logrusutil.ComponentInit(component)
 
 	o := gatherOptions(flag.NewFlagSet(os.Args[0], flag.ExitOnError), os.Args[1:]...)
 	if err := o.Validate(); err != nil {
