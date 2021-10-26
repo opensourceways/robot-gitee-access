@@ -53,6 +53,26 @@ func (a accessConfig) validate() error {
 
 type eventsDemux map[string][]string
 
+func updateDemux(p *pluginConfig, d eventsDemux) {
+	endpoint := p.Endpoint
+
+	for _, e := range p.Events {
+		if es, ok := d[e]; ok {
+			d[e] = append(es, endpoint)
+		} else {
+			d[e] = []string{endpoint}
+		}
+	}
+}
+
+func orgOfRepo(repo string) string {
+	spliter := "/"
+	if strings.Contains(repo, spliter) {
+		return strings.Split(repo, spliter)[0]
+	}
+	return ""
+}
+
 func (a accessConfig) getDemux() map[string]eventsDemux {
 	plugins := make(map[string]int)
 	for i := range a.Plugins {
@@ -60,34 +80,27 @@ func (a accessConfig) getDemux() map[string]eventsDemux {
 	}
 
 	r := make(map[string]eventsDemux)
+	rp := a.RepoPlugins
 
-	for k, ps := range a.RepoPlugins {
+	for k, ps := range rp {
 		events, ok := r[k]
 		if !ok {
 			events = make(eventsDemux)
+			r[k] = events
+		}
+
+		// inherit the config of org if k is a repo.
+		if org := orgOfRepo(k); org != "" {
+			ps = append(ps, rp[org]...)
 		}
 
 		for _, p := range ps {
-			i, ok := plugins[p]
-			if !ok {
-				continue
-			}
-
-			endpoint := a.Plugins[i].Endpoint
-
-			for _, e := range a.Plugins[i].Events {
-				es, ok := events[e]
-				if ok {
-					es = append(es, endpoint)
-				} else {
-					es = []string{endpoint}
-				}
-				events[e] = es
+			if i, ok := plugins[p]; ok {
+				updateDemux(&a.Plugins[i], events)
 			}
 		}
-
-		r[k] = events
 	}
+
 	return r
 }
 

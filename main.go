@@ -72,6 +72,7 @@ func main() {
 	defer interrupts.WaitForGracefulShutdown()
 
 	interrupts.OnInterrupt(func() {
+		// agent depends on configAgent, so stop agent first.
 		agent.Stop()
 		logrus.Info("demux stopped")
 

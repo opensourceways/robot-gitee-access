@@ -90,6 +90,13 @@ func (d *dispatcher) Dispatch(eventType string, payload []byte, h http.Header, l
 		return nil
 	}
 
+	l = l.WithFields(logrus.Fields{
+		"org":        org,
+		"repo":       repo,
+		"event type": eventType,
+	})
+	l.Info("start dispatching event.")
+
 	d.dispatch(d.getEndpoints(org, repo, eventType), payload, h, l)
 	return nil
 }
@@ -101,27 +108,43 @@ func (d *dispatcher) getEndpoints(org, repo, event string) []string {
 func (d *dispatcher) dispatch(endpoints []string, payload []byte, h http.Header, l *logrus.Entry) {
 	h.Set("User-Agent", "Robot-Gitee-Access")
 
-	for _, p := range endpoints {
+	newReq := func(endpoint string) (*http.Request, error) {
+		req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(payload))
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header = h
+
+		return req, nil
+	}
+
+	reqs := make([]*http.Request, 0, len(endpoints))
+
+	for _, endpoint := range endpoints {
+		if req, err := newReq(endpoint); err == nil {
+			reqs = append(reqs, req)
+		} else {
+			l.WithError(err).WithField("endpoint", endpoint).Error("Error generating http request.")
+		}
+	}
+
+	for _, req := range reqs {
 		d.wg.Add(1)
-		go func() {
+
+		// concurrent action is sending request not generating it.
+		// so, generates requests first.
+		go func(req *http.Request) {
 			defer d.wg.Done()
-			if err := d.forwardTo(p, payload, h); err != nil {
-				l.WithError(err).WithField("endpoint", p).Error("Error dispatching event.")
+
+			if err := d.forwardTo(req); err != nil {
+				l.WithError(err).WithField("endpoint", req.RequestURI).Error("Error forwarding event.")
 			}
-		}()
+		}(req)
 	}
 }
 
-// forwardTo creates a new request using the provided payload and headers
-// and sends the request forward to the provided endpoint.
-func (d *dispatcher) forwardTo(endpoint string, payload []byte, h http.Header) error {
-	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(payload))
-	if err != nil {
-		return err
-	}
-
-	req.Header = h
-
+func (d *dispatcher) forwardTo(req *http.Request) error {
 	resp, err := d.do(req)
 	if err != nil || resp == nil {
 		return err
@@ -141,16 +164,20 @@ func (d *dispatcher) forwardTo(endpoint string, payload []byte, h http.Header) e
 }
 
 func (d *dispatcher) do(req *http.Request) (resp *http.Response, err error) {
-	maxRetries := 5
+	if resp, err = d.ec.Do(req); err == nil {
+		return
+	}
+
+	maxRetries := 4
 	backoff := 100 * time.Millisecond
 
 	for retries := 0; retries < maxRetries; retries++ {
+		time.Sleep(backoff)
+		backoff *= 2
+
 		if resp, err = d.ec.Do(req); err == nil {
 			break
 		}
-
-		time.Sleep(backoff)
-		backoff *= 2
 	}
 	return
 }

@@ -38,6 +38,8 @@ func (ca *demuxConfigAgent) load() {
 
 	m := nc.Config.getDemux()
 
+	// this function runs in serially, and ca.version is accessed in it,
+	// so, there is no need to update it under the lock.
 	ca.version = v
 
 	ca.mut.Lock()
@@ -47,29 +49,27 @@ func (ca *demuxConfigAgent) load() {
 
 func (ca *demuxConfigAgent) GetEndpoints(org, repo, event string) []string {
 	ca.mut.RLock()
-	v := getEndpoints(org, repo, event, ca.demux)
+	v := getEventsDemux(org, repo, ca.demux)[event]
 	ca.mut.RUnlock()
 
 	return v
 }
 
-func getEndpoints(org, repo, event string, demux map[string]eventsDemux) []string {
+func getEventsDemux(org, repo string, demux map[string]eventsDemux) eventsDemux {
 	if demux == nil {
-		return nil
+		return eventsDemux{}
 	}
 
-	items, ok := demux[org]
-	if !ok {
-		fullname := fmt.Sprintf("%s/%s", org, repo)
-		if items, ok = demux[fullname]; !ok {
-			return nil
-		}
+	fullname := fmt.Sprintf("%s/%s", org, repo)
+	if items, ok := demux[fullname]; ok {
+		return items
 	}
 
-	if items != nil {
-		return items[event]
+	if items, ok := demux[org]; ok {
+		return items
 	}
-	return nil
+
+	return eventsDemux{}
 }
 
 func (ca *demuxConfigAgent) Start() {
