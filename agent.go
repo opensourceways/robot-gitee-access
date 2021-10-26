@@ -47,7 +47,7 @@ func (ca *demuxConfigAgent) load() {
 	ca.mut.Unlock()
 }
 
-func (ca *demuxConfigAgent) GetEndpoints(org, repo, event string) []string {
+func (ca *demuxConfigAgent) getEndpoints(org, repo, event string) []string {
 	ca.mut.RLock()
 	v := getEventsDemux(org, repo, ca.demux)[event]
 	ca.mut.RUnlock()
@@ -72,7 +72,7 @@ func getEventsDemux(org, repo string, demux map[string]eventsDemux) eventsDemux 
 	return eventsDemux{}
 }
 
-func (ca *demuxConfigAgent) Start() {
+func (ca *demuxConfigAgent) start() {
 	ca.load()
 
 	ca.t.Start(
@@ -83,6 +83,6 @@ func (ca *demuxConfigAgent) Start() {
 	)
 }
 
-func (ca *demuxConfigAgent) Stop() {
+func (ca *demuxConfigAgent) stop() {
 	ca.t.Stop()
 }

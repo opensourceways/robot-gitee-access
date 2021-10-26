@@ -24,7 +24,7 @@ type dispatcher struct {
 	wg sync.WaitGroup
 }
 
-func (d *dispatcher) Wait() {
+func (d *dispatcher) wait() {
 	d.wg.Wait() // Handle remaining requests
 }
 
@@ -43,12 +43,12 @@ func (d *dispatcher) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		},
 	)
 
-	if err := d.Dispatch(eventType, payload, r.Header, l); err != nil {
+	if err := d.dispatch(eventType, payload, r.Header, l); err != nil {
 		l.WithError(err).Error()
 	}
 }
 
-func (d *dispatcher) Dispatch(eventType string, payload []byte, h http.Header, l *logrus.Entry) error {
+func (d *dispatcher) dispatch(eventType string, payload []byte, h http.Header, l *logrus.Entry) error {
 	org := ""
 	repo := ""
 
@@ -97,15 +97,12 @@ func (d *dispatcher) Dispatch(eventType string, payload []byte, h http.Header, l
 	})
 	l.Info("start dispatching event.")
 
-	d.dispatch(d.getEndpoints(org, repo, eventType), payload, h, l)
+	endpoints := d.agent.getEndpoints(org, repo, eventType)
+	d.doDispatch(endpoints, payload, h, l)
 	return nil
 }
 
-func (d *dispatcher) getEndpoints(org, repo, event string) []string {
-	return d.agent.GetEndpoints(org, repo, event)
-}
-
-func (d *dispatcher) dispatch(endpoints []string, payload []byte, h http.Header, l *logrus.Entry) {
+func (d *dispatcher) doDispatch(endpoints []string, payload []byte, h http.Header, l *logrus.Entry) {
 	h.Set("User-Agent", "Robot-Gitee-Access")
 
 	newReq := func(endpoint string) (*http.Request, error) {

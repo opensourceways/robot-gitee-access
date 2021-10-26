@@ -53,7 +53,7 @@ func main() {
 	}
 
 	agent := demuxConfigAgent{agent: &configAgent, t: utils.NewTimer()}
-	agent.Start()
+	agent.start()
 
 	secretAgent := new(secret.Agent)
 	if err := secretAgent.Start([]string{o.hmacSecretFile}); err != nil {
@@ -73,7 +73,7 @@ func main() {
 
 	interrupts.OnInterrupt(func() {
 		// agent depends on configAgent, so stop agent first.
-		agent.Stop()
+		agent.stop()
 		logrus.Info("demux stopped")
 
 		configAgent.Stop()
@@ -82,7 +82,7 @@ func main() {
 		secretAgent.Stop()
 		logrus.Info("secret stopped")
 
-		d.Wait()
+		d.wait()
 	})
 
 	// Return 200 on / for health checks.
