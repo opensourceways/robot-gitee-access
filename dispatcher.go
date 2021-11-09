@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -95,9 +96,10 @@ func (d *dispatcher) dispatch(eventType string, payload []byte, h http.Header, l
 		"repo":       repo,
 		"event type": eventType,
 	})
-	l.Info("start dispatching event.")
 
 	endpoints := d.agent.getEndpoints(org, repo, eventType)
+	l.WithField("endpoints", strings.Join(endpoints, ", ")).Info("start dispatching event.")
+
 	d.doDispatch(endpoints, payload, h, l)
 	return nil
 }
@@ -135,7 +137,7 @@ func (d *dispatcher) doDispatch(endpoints []string, payload []byte, h http.Heade
 			defer d.wg.Done()
 
 			if err := d.forwardTo(req); err != nil {
-				l.WithError(err).WithField("endpoint", req.RequestURI).Error("Error forwarding event.")
+				l.WithError(err).WithField("endpoint", req.URL.String()).Error("Error forwarding event.")
 			}
 		}(req)
 	}
