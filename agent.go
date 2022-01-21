@@ -80,6 +80,7 @@ func (ca *demuxConfigAgent) start() {
 			ca.load()
 		},
 		1*time.Minute,
+		0,
 	)
 }
 

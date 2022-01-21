@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/opensourceways/community-robot-lib/giteeclient"
+	sdk "github.com/opensourceways/go-gitee/gitee"
 	"github.com/sirupsen/logrus"
 )
 
@@ -54,37 +55,37 @@ func (d *dispatcher) dispatch(eventType string, payload []byte, h http.Header, l
 	repo := ""
 
 	switch eventType {
-	case giteeclient.EventTypeNote:
-		e, err := giteeclient.ConvertToNoteEvent(payload)
+	case sdk.EventTypeNote:
+		e, err := sdk.ConvertToNoteEvent(payload)
 		if err != nil {
 			return err
 		}
 
-		org, repo = giteeclient.GetOwnerAndRepoByNoteEvent(&e)
+		org, repo = e.GetOrgRepo()
 
-	case giteeclient.EventTypeIssue:
-		e, err := giteeclient.ConvertToIssueEvent(payload)
+	case sdk.EventTypeIssue:
+		e, err := sdk.ConvertToIssueEvent(payload)
 		if err != nil {
 			return err
 		}
 
-		org, repo = giteeclient.GetOwnerAndRepoByIssueEvent(&e)
+		org, repo = e.GetOrgRepo()
 
-	case giteeclient.EventTypePR:
-		e, err := giteeclient.ConvertToPREvent(payload)
+	case sdk.EventTypePR:
+		e, err := sdk.ConvertToPREvent(payload)
 		if err != nil {
 			return err
 		}
 
-		org, repo = giteeclient.GetOwnerAndRepoByPREvent(&e)
+		org, repo = e.GetOrgRepo()
 
-	case giteeclient.EventTypePush:
-		e, err := giteeclient.ConvertToPushEvent(payload)
+	case sdk.EventTypePush:
+		e, err := sdk.ConvertToPushEvent(payload)
 		if err != nil {
 			return err
 		}
 
-		org, repo = giteeclient.GetOwnerAndRepoByPushEvent(&e)
+		org, repo = e.GetOrgRepo()
 
 	default:
 		l.Debug("Ignoring unknown event type")
