@@ -16,18 +16,18 @@ import (
 )
 
 type options struct {
-	plugin         liboptions.PluginOptions
+	service        liboptions.ServiceOptions
 	hmacSecretFile string
 }
 
 func (o *options) Validate() error {
-	return o.plugin.Validate()
+	return o.service.Validate()
 }
 
 func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	var o options
 
-	o.plugin.AddFlags(fs)
+	o.service.AddFlags(fs)
 
 	fs.StringVar(&o.hmacSecretFile, "hmac-secret-file", "/etc/webhook/hmac", "Path to the file containing the HMAC secret.")
 
@@ -45,10 +45,10 @@ func main() {
 		logrus.WithError(err).Fatal("Invalid options")
 	}
 
-	configAgent := config.NewConfigAgent(func() config.PluginConfig {
+	configAgent := config.NewConfigAgent(func() config.Config {
 		return new(configuration)
 	})
-	if err := configAgent.Start(o.plugin.PluginConfig); err != nil {
+	if err := configAgent.Start(o.service.ConfigFile); err != nil {
 		logrus.WithError(err).Fatal("Error starting config agent.")
 	}
 
@@ -91,7 +91,7 @@ func main() {
 	// For /hook, handle a webhook normally.
 	http.Handle("/gitee-hook", &d)
 
-	httpServer := &http.Server{Addr: ":" + strconv.Itoa(o.plugin.Port)}
+	httpServer := &http.Server{Addr: ":" + strconv.Itoa(o.service.Port)}
 
-	interrupts.ListenAndServe(httpServer, o.plugin.GracePeriod)
+	interrupts.ListenAndServe(httpServer, o.service.GracePeriod)
 }

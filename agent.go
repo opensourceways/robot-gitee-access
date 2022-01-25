@@ -8,13 +8,14 @@ import (
 	"github.com/opensourceways/community-robot-lib/config"
 	"github.com/opensourceways/community-robot-lib/utils"
 	"github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 type demuxConfigAgent struct {
 	agent *config.ConfigAgent
 
 	mut     sync.RWMutex
-	demux   map[string]eventsDemux
+	demux   demux
 	version string
 	t       utils.Timer
 }
@@ -49,27 +50,10 @@ func (ca *demuxConfigAgent) load() {
 
 func (ca *demuxConfigAgent) getEndpoints(org, repo, event string) []string {
 	ca.mut.RLock()
-	v := getEventsDemux(org, repo, ca.demux)[event]
+	v := ca.demux.getEventsDemux(org, repo)[event]
 	ca.mut.RUnlock()
 
-	return v
-}
-
-func getEventsDemux(org, repo string, demux map[string]eventsDemux) eventsDemux {
-	if demux == nil {
-		return eventsDemux{}
-	}
-
-	fullname := fmt.Sprintf("%s/%s", org, repo)
-	if items, ok := demux[fullname]; ok {
-		return items
-	}
-
-	if items, ok := demux[org]; ok {
-		return items
-	}
-
-	return eventsDemux{}
+	return v.UnsortedList()
 }
 
 func (ca *demuxConfigAgent) start() {
@@ -80,9 +64,56 @@ func (ca *demuxConfigAgent) start() {
 			ca.load()
 		},
 		1*time.Minute,
+		0,
 	)
 }
 
 func (ca *demuxConfigAgent) stop() {
 	ca.t.Stop()
+}
+
+type demux struct {
+	reposEventDemux         map[string]eventsDemux
+	excludeReposEventsDemux map[string]eventsDemux
+}
+
+func (d demux) getEventsDemux(org, repo string) eventsDemux {
+	res := eventsDemux{}
+	if d.reposEventDemux == nil {
+		return res
+	}
+
+	cp := func(origin eventsDemux) eventsDemux {
+		r := make(eventsDemux)
+		if origin == nil {
+			return r
+		}
+
+		for k, v := range origin {
+			r[k] = sets.NewString().Union(v)
+		}
+
+		return r
+	}
+
+	fn := fmt.Sprintf("%s/%s", org, repo)
+	if v, ok := d.reposEventDemux[fn]; ok {
+		res = cp(v)
+	} else if v, ok := d.reposEventDemux[org]; ok {
+		res = cp(v)
+	}
+
+	if d.excludeReposEventsDemux == nil {
+		return res
+	}
+
+	if v, ok := d.excludeReposEventsDemux[fn]; ok {
+		for k, es := range res {
+			if s, ok := v[k]; ok {
+				res[k] = es.Difference(s)
+			}
+		}
+	}
+
+	return res
 }

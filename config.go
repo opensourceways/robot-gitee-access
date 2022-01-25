@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/opensourceways/community-robot-lib/config"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -18,8 +19,8 @@ func (c *configuration) Validate() error {
 func (c *configuration) SetDefault() {}
 
 type accessConfig struct {
-	// Plugins is a map of repositories (eg "k/k") to lists of plugin names.
-	RepoPlugins map[string][]string `json:"repo_plugins,omitempty"`
+	// RepoPlugins list of plugins needed to configure the repository
+	RepoPlugins []repoPlugins `json:"repo_plugins,omitempty"`
 
 	// Plugins is a list available plugins.
 	Plugins []pluginConfig `json:"plugins,omitempty"`
@@ -32,17 +33,22 @@ func (a accessConfig) validate() error {
 		}
 	}
 
+	for i := range a.RepoPlugins {
+		if err := a.RepoPlugins[i].validate(); err != nil {
+			return err
+		}
+	}
+
 	ps := make([]string, len(a.Plugins))
 	for i := range a.Plugins {
 		ps[i] = a.Plugins[i].Name
 	}
 
 	total := sets.NewString(ps...)
-
-	for k, item := range a.RepoPlugins {
-		if v := sets.NewString(item...).Difference(total); v.Len() != 0 {
+	for _, item := range a.RepoPlugins {
+		if v := sets.NewString(item.Plugins...).Difference(total); v.Len() != 0 {
 			return fmt.Errorf(
-				"%s: unknown plugins(%s) are set", k,
+				"%s: unknown plugins(%s) are set", strings.Join(item.Repos, ", "),
 				strings.Join(v.UnsortedList(), ", "),
 			)
 		}
@@ -51,16 +57,107 @@ func (a accessConfig) validate() error {
 	return nil
 }
 
-type eventsDemux map[string][]string
+func (a accessConfig) allRepoPluginsMap() map[string]sets.String {
+	rst := make(map[string]sets.String)
+
+	for _, item := range a.RepoPlugins {
+		for k, v := range item.reposPlugins() {
+			if _, ok := rst[k]; ok {
+				rst[k] = rst[k].Union(v)
+			} else {
+				rst[k] = v
+			}
+		}
+	}
+
+	return rst
+}
+
+func (a accessConfig) allExcludeRepoPluginsMap() map[string]sets.String {
+	rst := make(map[string]sets.String)
+
+	for _, item := range a.RepoPlugins {
+		for k, v := range item.excludeReposPlugins() {
+			if _, ok := rst[k]; ok {
+				rst[k] = rst[k].Union(v)
+			} else {
+				rst[k] = v
+			}
+		}
+	}
+
+	return rst
+}
+
+func (a accessConfig) getDemux() demux {
+	plugins := make(map[string]int)
+	for i := range a.Plugins {
+		plugins[a.Plugins[i].Name] = i
+	}
+
+	return demux{
+		reposEventDemux:         a.genRPDemux(plugins),
+		excludeReposEventsDemux: a.genERPDemux(plugins),
+	}
+}
+
+func (a accessConfig) genRPDemux(plugins map[string]int) map[string]eventsDemux {
+	drp := make(map[string]eventsDemux)
+	allRPM := a.allRepoPluginsMap()
+
+	for k, ps := range allRPM {
+		events, ok := drp[k]
+		if !ok {
+			events = make(eventsDemux)
+			drp[k] = events
+		}
+
+		// inherit the config of org if k is a repo.
+		if org := orgOfRepo(k); org != "" {
+			ps = ps.Union(allRPM[org])
+		}
+
+		for p := range ps {
+			if i, ok := plugins[p]; ok {
+				updateDemux(&a.Plugins[i], events)
+			}
+		}
+	}
+
+	return drp
+}
+
+func (a accessConfig) genERPDemux(plugins map[string]int) map[string]eventsDemux {
+	derp := make(map[string]eventsDemux)
+	allERPM := a.allExcludeRepoPluginsMap()
+
+	for k, ps := range allERPM {
+		events, ok := derp[k]
+		if !ok {
+			events = make(eventsDemux)
+			derp[k] = events
+		}
+
+		for p := range ps {
+			if i, ok := plugins[p]; ok {
+				updateDemux(&a.Plugins[i], events)
+			}
+		}
+	}
+
+	return derp
+}
+
+type eventsDemux map[string]sets.String
 
 func updateDemux(p *pluginConfig, d eventsDemux) {
 	endpoint := p.Endpoint
 
 	for _, e := range p.Events {
 		if es, ok := d[e]; ok {
-			d[e] = append(es, endpoint)
+			d[e] = es.Insert(endpoint)
 		} else {
-			d[e] = []string{endpoint}
+			d[e] = sets.NewString(endpoint)
 		}
 	}
 }
@@ -71,37 +168,6 @@ func orgOfRepo(repo string) string {
 		return strings.Split(repo, spliter)[0]
 	}
 	return ""
-}
-
-func (a accessConfig) getDemux() map[string]eventsDemux {
-	plugins := make(map[string]int)
-	for i := range a.Plugins {
-		plugins[a.Plugins[i].Name] = i
-	}
-
-	r := make(map[string]eventsDemux)
-	rp := a.RepoPlugins
-
-	for k, ps := range rp {
-		events, ok := r[k]
-		if !ok {
-			events = make(eventsDemux)
-			r[k] = events
-		}
-
-		// inherit the config of org if k is a repo.
-		if org := orgOfRepo(k); org != "" {
-			ps = append(ps, rp[org]...)
-		}
-
-		for _, p := range ps {
-			if i, ok := plugins[p]; ok {
-				updateDemux(&a.Plugins[i], events)
-			}
-		}
-	}
-
-	return r
 }
 
 type pluginConfig struct {
@@ -127,4 +193,40 @@ func (p pluginConfig) validate() error {
 
 	// TODO validate the value of p.Endpoint
 	return nil
+}
+
+type repoPlugins struct {
+	config.RepoFilter
+	// Plugins list of plugins that a repository or organization needs to use
+	Plugins []string
+}
+
+func (rp *repoPlugins) validate() error {
+	return rp.RepoFilter.Validate()
+}
+
+func (rp *repoPlugins) reposPlugins() map[string]sets.String {
+	rpMap := make(map[string]sets.String, len(rp.Repos))
+	pSet := rp.pluginsSet()
+
+	for _, v := range rp.Repos {
+		rpMap[v] = pSet
+	}
+
+	return rpMap
+}
+
+func (rp *repoPlugins) excludeReposPlugins() map[string]sets.String {
+	erpMap := make(map[string]sets.String, len(rp.ExcludedRepos))
+	pSet := rp.pluginsSet()
+
+	for _, v := range rp.ExcludedRepos {
+		erpMap[v] = pSet
+	}
+
+	return erpMap
+}
+
+func (rp *repoPlugins) pluginsSet() sets.String {
+	return sets.NewString(rp.Plugins...)
 }
